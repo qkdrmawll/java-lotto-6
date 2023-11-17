@@ -5,10 +5,10 @@ public class ValidatePrice {
     public boolean validatePrice(String price) {
         PRICE = price;
         if (!isNumber()) {
-            throw new IllegalArgumentException();
+            throw new IllegalArgumentException("[ERROR] 구매 금액은 숫자로 입력해야 합니다.");
         }
         if (!isThousand()) {
-            throw new IllegalArgumentException();
+            throw new IllegalArgumentException("[ERROR] 구매 금액은 1,000원 단위로 입력해야 합니다.");
         }
         return true;
     }
