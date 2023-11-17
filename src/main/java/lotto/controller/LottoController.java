@@ -2,35 +2,92 @@ package lotto.controller;
 
 import lotto.domain.Lotto;
 import lotto.service.LottoService;
+import lotto.validation.ValidateBonusNumber;
+import lotto.validation.ValidateInputWinningNumber;
 import lotto.validation.ValidatePrice;
 import lotto.view.LottoView;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static camp.nextstep.edu.missionutils.Console.readLine;
 
 public class LottoController {
     LottoView lottoView = new LottoView();
-    ValidatePrice validatePrice = new ValidatePrice();
+    ValidatePrice priceValidator = new ValidatePrice();
+    ValidateInputWinningNumber winningNumberValidator = new ValidateInputWinningNumber();
+    ValidateBonusNumber bonusNumberValidator = new ValidateBonusNumber();
     LottoService lottoService = new LottoService();
+    static int purchasePrice;
+    static Lotto winningNumberLotto;
 
-    String purchaseErrMsg = "[ERROR] 구입 금액은 1000 단위의 숫자를 입력해야 합니다.";
     public void makePurchase() {
-        lottoView.inputPurchasePrice();
-        String purchasePrice = readLine();
-        try {
-            validatePrice.validatePrice(purchasePrice);
-        }catch (IllegalArgumentException e) {
-            System.out.println(purchaseErrMsg);
+        String inputPurchasePrice = "";
+        while (inputPurchasePrice.isEmpty()) {
+            inputPurchasePrice = getInputPurchasePrice();
         }
-        int lottoNum = Integer.parseInt(purchasePrice)/1000;
+        purchasePrice = Integer.parseInt(inputPurchasePrice);
+        int lottoNum = purchasePrice/1000;
         List<Lotto> lottoList = lottoService.generateLotto(lottoNum);
         lottoView.printLotto(lottoList);
     }
-    public void drawForWinner() {
 
+    private String getInputPurchasePrice() {
+        lottoView.inputPurchasePrice();
+        String inputPurchasePrice = readLine();
+        try {
+            priceValidator.validatePrice(inputPurchasePrice);
+            return inputPurchasePrice;
+        }catch (IllegalArgumentException e) {
+            System.out.println(e.getMessage());
+            return "";
+        }
     }
-    public void setWinningDetails() {
 
+    public int[] drawForWinner() {
+        List<Integer> winningNumber = getInputWinningNumber();
+        while (winningNumber.isEmpty()) {
+            winningNumber = getInputWinningNumber();
+        }
+        winningNumberLotto = new Lotto(winningNumber);
+        int bonusNumber=-1;
+        while (bonusNumber == -1) {
+            bonusNumber = getInputBonusNumber();
+        }
+        return lottoService.drawForWinning(winningNumberLotto,bonusNumber);
+    }
+
+    private int getInputBonusNumber() {
+        lottoView.inputBonusNumber();
+        String inputBonusNumber = readLine();
+        int bonusNumber = -1;
+        try {
+            bonusNumber = bonusNumberValidator.validateBonusNumber(inputBonusNumber, winningNumberLotto);
+        }catch (IllegalArgumentException e) {
+            System.out.println(e.getMessage());
+        }
+        return bonusNumber;
+    }
+
+    private List<Integer> getInputWinningNumber() {
+        lottoView.inputWinningNumber();
+        String[] inputWinningNumber = readLine().split(",");
+        try {
+            winningNumberValidator.validateWinningNumber(inputWinningNumber);
+        }catch (IllegalArgumentException e) {
+            System.out.println(e.getMessage());
+            return new ArrayList<>();
+        }
+        List<Integer> winningNumber = new ArrayList<>();
+        for (String s : inputWinningNumber) {
+            winningNumber.add(Integer.parseInt(s));
+        }
+        return winningNumber;
+    }
+
+    public void setWinningDetails(int[] winningDetails) {
+        lottoView.printWinningDetails(winningDetails);
+        double rateOfReturn = lottoService.calculateRateOfReturn(purchasePrice,winningDetails);
+        lottoView.printRateOfReturn(rateOfReturn);
     }
 }
